@@ -613,6 +613,8 @@ int main(int argc, char **argv) {
     if (brk_point_set)
         fprintf(stdout, "Breakpoint: %u\n", brk_point);
 
+    fprintf(stdout, "Clock speed: %d Hz\n", clock_speed);
+
     sdl_setup();
     atexit(SDL_Quit);
 
