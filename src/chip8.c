@@ -19,8 +19,8 @@
 #include <getopt.h>
 
 /* SDL default window size */
-#define WIN_W 640
-#define WIN_H 320
+#define SDL_WIN_W 640
+#define SDL_WIN_H 320
 
 /* Chip8 hardware parameters */
 #define MEM_SIZE 4096
@@ -29,32 +29,19 @@
 #define DISP_H 32
 #define DISP_SIZE DISP_W*DISP_H
 #define STACK_SIZE 16
-#define _60HZ 16666667L     /* (1/60) seconds in ns */
-
-/* Convenience macros */
+#define _60HZ 16666667L /* (1/60) seconds in ns */
 #define VF V[15]
-#define DBG(S,...) do { \
-    if (dbg_output) \
-        fprintf(stdout, S, __VA_ARGS__); \
-} while(0)
 
+/* Chip8 font. Digits 0-F, 5 bytes each. */
 static const uint8_t chip8_fontset[80] = {
-    0xF0, 0x90, 0x90, 0x90, 0xF0,   /* 0 */
-    0x20, 0x60, 0x20, 0x20, 0x70,   /* 1 */
-    0xF0, 0x10, 0xF0, 0x80, 0xF0,   /* 2 */
-    0xF0, 0x10, 0xF0, 0x10, 0xF0,   /* 3 */
-    0x90, 0x90, 0xF0, 0x10, 0x10,   /* 4 */
-    0xF0, 0x80, 0xF0, 0x10, 0xF0,   /* 5 */
-    0xF0, 0x80, 0xF0, 0x90, 0xF0,   /* 6 */
-    0xF0, 0x10, 0x20, 0x40, 0x40,   /* 7 */
-    0xF0, 0x90, 0xF0, 0x90, 0xF0,   /* 8 */
-    0xF0, 0x90, 0xF0, 0x10, 0xF0,   /* 9 */
-    0xF0, 0x90, 0xF0, 0x90, 0x90,   /* A */
-    0xE0, 0x90, 0xE0, 0x90, 0xE0,   /* B */
-    0xF0, 0x80, 0x80, 0x80, 0xF0,   /* C */
-    0xE0, 0x90, 0x90, 0x90, 0xE0,   /* D */
-    0xF0, 0x80, 0xF0, 0x80, 0xF0,   /* E */
-    0xF0, 0x80, 0xF0, 0x80, 0x80    /* F */
+    0xF0, 0x90, 0x90, 0x90, 0xF0, 0x20, 0x60, 0x20, 0x20, 0x70,
+    0xF0, 0x10, 0xF0, 0x80, 0xF0, 0xF0, 0x10, 0xF0, 0x10, 0xF0,
+    0x90, 0x90, 0xF0, 0x10, 0x10, 0xF0, 0x80, 0xF0, 0x10, 0xF0,
+    0xF0, 0x80, 0xF0, 0x90, 0xF0, 0xF0, 0x10, 0x20, 0x40, 0x40,
+    0xF0, 0x90, 0xF0, 0x90, 0xF0, 0xF0, 0x90, 0xF0, 0x10, 0xF0,
+    0xF0, 0x90, 0xF0, 0x90, 0x90, 0xE0, 0x90, 0xE0, 0x90, 0xE0,
+    0xF0, 0x80, 0x80, 0x80, 0xF0, 0xE0, 0x90, 0x90, 0x90, 0xE0,
+    0xF0, 0x80, 0xF0, 0x80, 0xF0, 0xF0, 0x80, 0xF0, 0x80, 0x80
 };
 
 enum chip8_key {
@@ -76,25 +63,20 @@ enum eml_stat {
     EML_PC_OVERFL                           /* Error: PC outside memory */
 };
 
-/*
- * Chip8 machine state
- *
- * Memory layout:
- * 0x000-0x1FF: reserved (used for font)
- * 0x200-0xFFF: available
- */
+/* Chip8 machine state */
 static uint8_t memory[MEM_SIZE];            /* 4096 bytes of memory */
 static uint8_t display[DISP_SIZE];          /* 64x32 pixel monochrome display */
 static uint8_t V[16];                       /* V0 to VF data registers */
 static uint8_t SP;                          /* Stack pointer (next free slot) */
 static uint8_t DT;                          /* Delay timer */
 static uint8_t ST;                          /* Sound timer */
-static uint16_t PC = 0x200;                 /* Program counter */
+static uint16_t PC = 0x200;                 /* Program counter. Start at 0x200 */
 static uint16_t I;                          /* Address register */
 static uint16_t stack[STACK_SIZE];          /* Stack */
 
 /* Emulator data */
 static uint16_t opcode;                     /* Last read opcode */
+static uint16_t prev_PC;                    /* Previous PC (for error output) */
 static uint16_t keypad;                     /* Bitmap for pressed keys, 0-F */
 static enum chip8_key last_key = C8K_NONE;  /* The last pressed key */
 static bool key_waiting = false;            /* Emulator is wating for a key */
@@ -104,8 +86,8 @@ static uint32_t brk_point;                  /* Curent breakpoint */
 static int32_t clock_speed = 1080;          /* Clock speed in Hz */
 
 /* SDL */
-static SDL_Window *window = NULL;
-static SDL_Renderer *renderer = NULL;
+static SDL_Window *window;
+static SDL_Renderer *renderer;
 
 /* Map SDL_Keycode -> Chip8 Keypad */
 static uint8_t sdlk_to_c8k(SDL_Keycode key) {
@@ -438,15 +420,17 @@ static enum eml_stat chip8_cycle() {
     /* PC points to next instruction during instruction execution */
     PC += 2;
 
-    /* Keep the old PC. (Some instructions change it) */
-    uint16_t PC_old = PC;
+    /* Keep the old PC. (Instructions like JP change it) */
+    prev_PC = PC;
 
     /* Interpret next instruction */
     enum eml_stat status = j_tbl1[(opcode & 0xF000) >> 12]();
 
-    DBG("PC=%04u, SP=%02u, opcode=0x%04X\n", PC_old, SP, opcode);
+    if (dbg_output)
+        fprintf(stdout, "PC=%04u, SP=%02u, opcode=0x%04X\n",
+                prev_PC, SP, opcode);
 
-    if (brk_point_set && PC_old == brk_point) /* Check if breakpoint reached */
+    if (brk_point_set && prev_PC == brk_point) /* Check if breakpoint reached */
         return EML_BRK_REACHED;
 
     return status;
@@ -563,7 +547,7 @@ static bool sdl_setup() {
     }
 
     window = SDL_CreateWindow("Chip8", SDL_WINDOWPOS_UNDEFINED,
-            SDL_WINDOWPOS_UNDEFINED, WIN_W, WIN_H,
+            SDL_WINDOWPOS_UNDEFINED, SDL_WIN_W, SDL_WIN_H,
             SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_INPUT_FOCUS);
     if (!window) {
 		fprintf(stdout, "SDL_CreateWindow error: %s\n", SDL_GetError());
@@ -596,8 +580,7 @@ static void prt_usage() {
 
 int main(int argc, char **argv) {
     int opt;
-    char *optstring = "hc:db:";
-    while ((opt = getopt(argc, argv, optstring)) != -1) {
+    while ((opt = getopt(argc, argv, "hc:db:")) != -1) {
         switch (opt) {
         case 'h':
             prt_usage();
@@ -659,7 +642,7 @@ int main(int argc, char **argv) {
         bool redraw = false;
         bool fault = false;
         for (int i = 0; i < cycle_n && !fault; i++) {
-            /* handle events */
+            /* handle input events */
             while (SDL_PollEvent(&event)) {
                 terminate = event_handler(&event);
             }
@@ -670,15 +653,13 @@ int main(int argc, char **argv) {
                 redraw = true;
                 break;
             case EML_UNK_OPC:
-                fprintf(stderr,
-                        "Fault: Invalid opcode at PC=%u: 0x%04X\n",
+                fprintf(stderr, "Fault: Invalid opcode at PC=%u: 0x%04X\n",
                         PC, opcode);
                 fault = true;
                 terminate = true;
                 break;
             case EML_STACK_OVERFL:
-                fprintf(stderr,
-                        "Fault: Stack overflow at PC=%u\n", PC); // TODO: use prev opcode
+                fprintf(stderr, "Fault: Stack overflow at PC=%u\n", prev_PC);
                 fault = true;
                 terminate = true;
                 break;
