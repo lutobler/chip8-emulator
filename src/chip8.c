@@ -371,7 +371,6 @@ enum eml_stat _bF() {
     case 0x0055:
         for (int i = 0; i <= op_x(opcode); i++)
             memory[I+i] = V[i];
-        I += op_x(opcode) + 1;
         return EML_OK;
     /*
      * Fx65 - LD Vx, [I]:
@@ -380,7 +379,6 @@ enum eml_stat _bF() {
     case 0x0065:
         for (int i = 0; i <= op_x(opcode); i++)
             V[i] = memory[I+i];
-        I += op_x(opcode) + 1;
         return EML_OK;
     default:
         return EML_UNK_OPC;
