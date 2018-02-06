@@ -229,8 +229,8 @@ enum eml_stat _b8() {
         break;
     /* 8xy6 - SHR Vx {, Vy}: Set Vx = Vx SHR 1. */
     case 0x0006:
-        VF = ((V[op_y(opcode)] & 0x01) == 1) ? 1 : 0;
-        V[op_x(opcode)] = V[op_y(opcode)] >> 1;
+        VF = V[op_x(opcode)] & 0x01;
+        V[op_x(opcode)] = V[op_x(opcode)] >> 1;
         break;
     /* 8xy7 - SUBN Vx, Vy: Set Vx = Vy - Vx, set VF = NOT borrow. */
     case 0x0007:
@@ -239,8 +239,8 @@ enum eml_stat _b8() {
         break;
     /* 8xyE - SHL Vx {, Vy}: Set Vx = Vx SHL 1. */
     case 0x000E:
-        VF = ((V[op_y(opcode)] & 0x80) == 1) ? 1 : 0;
-        V[op_x(opcode)] = V[op_y(opcode)] << 1;
+        VF = (V[op_x(opcode)] & 0x80) >> 7;
+        V[op_x(opcode)] = V[op_x(opcode)] << 1;
         break;
     default:
         return EML_UNK_OPC;
