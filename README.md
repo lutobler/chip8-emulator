@@ -11,11 +11,12 @@ Dependencies:
 
 ### Building
 
-The meson build system is used:
+The CMake build system is used:
 
 ```
-meson build
+mkdir build
 cd build
-ninja
+cmake ..
+make
 ```
 
