@@ -198,7 +198,6 @@ static bool event_handler(SDL_Event *event) {
                 break;
             case SDLK_i:
                 eml.clock_speed += 60;
-                fprintf(stdout, "New clock speed: %d\n", eml.clock_speed);
                 update_overlay();
                 display_redraw();
                 break;
@@ -206,7 +205,6 @@ static bool event_handler(SDL_Event *event) {
                 if (eml.clock_speed > 60) {
                     eml.clock_speed -= 60;
                 }
-                fprintf(stdout, "New clock speed: %d\n", eml.clock_speed);
                 update_overlay();
                 display_redraw();
                 break;
