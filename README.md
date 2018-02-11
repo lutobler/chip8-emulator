@@ -7,7 +7,7 @@ Dependencies:
 
 * POSIX 🙃
 * [SDL2](https://www.libsdl.org/)
-* [meson](http://mesonbuild.com/), [ninja](https://ninja-build.org/)
+* [CMake](https://cmake.org/)
 
 ### Building
 
