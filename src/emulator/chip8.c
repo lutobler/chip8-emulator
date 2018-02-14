@@ -252,7 +252,7 @@ static inline enum eml_stat instr_LD_Vx_DT(uint16_t opcode, struct emulator *eml
 static inline enum eml_stat instr_LD_Vx_K(uint16_t opcode, struct emulator *eml) {
     if (eml->last_key == C8K_NONE) { /* start waiting-for-key process */
         eml->key_waiting = true;
-        return EML_WAIT_KEY;
+        return EML_OK;
     } else { /* stop waiting */
         eml->cpu.V[op_x(opcode)] = eml->last_key;
         eml->last_key = C8K_NONE;
@@ -340,7 +340,7 @@ enum eml_stat emulator_cycle(struct emulator *eml) {
     struct chip8 *cpu = &eml->cpu;
 
     if (eml->key_waiting) {
-        return EML_WAIT_KEY;
+        return EML_OK;
     }
     if (eml->cpu.PC+1 >= MEM_SIZE) {
         return EML_PC_OVERFL;

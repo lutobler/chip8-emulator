@@ -59,7 +59,6 @@ struct emulator {
 enum eml_stat {
     EML_OK,                             /* No errors during cycle */
     EML_REDRAW,                         /* Display redraw required */
-    EML_WAIT_KEY,                       /* Waiting for key press */
     EML_BRK_REACHED,                    /* Breakpoint reached */
     EML_UNK_OPC,                        /* Error: Unknown opcode */
     EML_STACK_OVERFL,                   /* Error: Stack overflow */
