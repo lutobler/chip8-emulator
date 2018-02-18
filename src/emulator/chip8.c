@@ -149,7 +149,7 @@ static inline enum eml_stat instr_SUB_Vx_Vy(uint16_t opcode, struct emulator *em
 }
 
 /* 8xy6 - SHR Vx {, Vy}: Set Vx = Vx SHR 1. */
-static inline enum eml_stat instr_SHR_Vx__Vy(uint16_t opcode, struct emulator *eml) {
+static inline enum eml_stat instr_SHR_Vx_Vy(uint16_t opcode, struct emulator *eml) {
     eml->cpu.V[0xF] = eml->cpu.V[op_x(opcode)] & 0x01;
     eml->cpu.V[op_x(opcode)] = eml->cpu.V[op_x(opcode)] >> 1;
     return EML_OK;
@@ -206,13 +206,14 @@ static inline enum eml_stat instr_DRW_Vx_Vy_n(uint16_t opcode, struct emulator *
     uint8_t y = eml->cpu.V[op_y(opcode)];
     uint8_t collide = 0;
     for (int i = 0; i < n; i++) {
+        uint8_t sprite_mask = eml->cpu.memory[eml->cpu.I + i];
         for (int j = 0; j < 8; j++) {
-            uint32_t d_idx = ((i + y) % DISP_H)*DISP_W + (x + j) % DISP_W;
-            uint8_t sprt_bit = (eml->cpu.memory[eml->cpu.I + i] >> (7 - j)) & 0x1;
-            if (eml->cpu.display[d_idx] == 1 && sprt_bit == 1) {
+            uint32_t pixel_idx = (i + y) % DISP_H * DISP_W + (x + j) % DISP_W;
+            uint8_t sprite_xor = (sprite_mask >> (7 - j)) & 0x1;
+            if (eml->cpu.display[pixel_idx] && sprite_xor) {
                 collide = 1;
             }
-            eml->cpu.display[d_idx] ^= sprt_bit;
+            eml->cpu.display[pixel_idx] ^= sprite_xor;
         }
     }
 
@@ -378,7 +379,7 @@ enum eml_stat emulator_cycle(struct emulator *eml) {
         case 0x3: status = instr_XOR_Vx_Vy(eml->opcode, eml); goto endcase;
         case 0x4: status = instr_ADD_Vx_Vy(eml->opcode, eml); goto endcase;
         case 0x5: status = instr_SUB_Vx_Vy(eml->opcode, eml); goto endcase;
-        case 0x6: status = instr_SHR_Vx__Vy(eml->opcode, eml); goto endcase;
+        case 0x6: status = instr_SHR_Vx_Vy(eml->opcode, eml); goto endcase;
         case 0x7: status = instr_SUBN_Vx_Vy(eml->opcode, eml); goto endcase;
         case 0xE: status = instr_SHL_Vx_Vy(eml->opcode, eml); goto endcase;
         }
