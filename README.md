@@ -9,6 +9,15 @@ Dependencies:
 * [SDL2](https://www.libsdl.org/)
 * [CMake](https://cmake.org/)
 
+## Key bindings
+
+Key | Action
+----|-------
+`o` | Toggle overlay
+`p` | Pause/unpause
+`u` | Decrease clock speed
+`i` | Increase clock speed
+
 ### Building
 
 The CMake build system is used:
