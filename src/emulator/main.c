@@ -291,6 +291,8 @@ static void prt_usage() {
 }
 
 int main(int argc, char **argv) {
+    emulator_init(&eml);
+
     int opt;
     while ((opt = getopt(argc, argv, "hc:db:")) != -1) {
         switch (opt) {
@@ -314,7 +316,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    emulator_init(&eml);
 
     if (optind >= argc) {
         prt_usage();
