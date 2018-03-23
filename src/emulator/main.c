@@ -60,7 +60,7 @@ static uint8_t sdlk_to_c8k(SDL_Keycode key) {
 }
 
 /* Set a key on the keypad as pressed */
-static inline void keypad_pressed(struct emulator *eml, SDL_Keycode key) {
+static void keypad_pressed(struct emulator *eml, SDL_Keycode key) {
     eml->keypad |= 1 << (sdlk_to_c8k(key));
     if (eml->key_waiting) {
         eml->last_key = sdlk_to_c8k(key);
@@ -69,7 +69,7 @@ static inline void keypad_pressed(struct emulator *eml, SDL_Keycode key) {
 }
 
 /* Set a key on the keypad as released */
-static inline void keypad_released(struct emulator *eml, SDL_Keycode key) {
+static void keypad_released(struct emulator *eml, SDL_Keycode key) {
     eml->keypad ^= 1 << (sdlk_to_c8k(key));
 }
 

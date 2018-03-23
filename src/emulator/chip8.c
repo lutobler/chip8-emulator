@@ -24,31 +24,31 @@ static const uint8_t chip8_fontset[80] = {
 };
 
 /* Test if a key is pressed */
-static inline bool keypad_is_pressed(struct emulator *eml, enum chip8_key key) {
+static bool keypad_is_pressed(struct emulator *eml, enum chip8_key key) {
     return eml->keypad & (1 << key);
 }
 
 /* Extract the x nibble from an opcode */
-static inline uint8_t op_x(uint16_t opcode) { return (opcode >> 8) & 0xF; }
+static uint8_t op_x(uint16_t opcode) { return (opcode >> 8) & 0xF; }
 
 /* Extract the y nibble from an opcode */
-static inline uint8_t op_y(uint16_t opcode) { return (opcode >> 4) & 0xF; }
+static uint8_t op_y(uint16_t opcode) { return (opcode >> 4) & 0xF; }
 
 /* Extract the kk byte from an opcode */
-static inline uint8_t op_kk(uint16_t opcode) { return opcode & 0xFF; }
+static uint8_t op_kk(uint16_t opcode) { return opcode & 0xFF; }
 
 /* Extract the nnn 12-bit number from an opcode */
-static inline uint16_t op_nnn(uint16_t opcode) { return opcode & 0xFFF; }
+static uint16_t op_nnn(uint16_t opcode) { return opcode & 0xFFF; }
 
 /* 00E0 - CLS: Clear the display. */
-static inline enum eml_stat instr_CLS(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_CLS(uint16_t opcode, struct emulator *eml) {
     (void) opcode;
     memset(&eml->cpu.display, 0, DISP_SIZE);
     return EML_REDRAW;
 }
 
 /* 00EE - RET: Return from a subroutine. */
-static inline enum eml_stat instr_RET(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_RET(uint16_t opcode, struct emulator *eml) {
     (void) opcode;
     if (eml->cpu.SP == 0) {
         return EML_STACK_UNDERFL;
@@ -58,13 +58,13 @@ static inline enum eml_stat instr_RET(uint16_t opcode, struct emulator *eml) {
 }
 
 /* 00EE - RET: Return from a subroutine. */
-static inline enum eml_stat instr_JP_nnn(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_JP_nnn(uint16_t opcode, struct emulator *eml) {
     eml->cpu.PC = op_nnn(opcode);
     return EML_OK;
 }
 
 /* 2nnn - CALL addr: Call subroutine at nnn. */
-static inline enum eml_stat instr_CALL_nnn(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_CALL_nnn(uint16_t opcode, struct emulator *eml) {
     if (eml->cpu.SP == STACK_SIZE) {
         return EML_STACK_OVERFL;
     }
@@ -74,7 +74,7 @@ static inline enum eml_stat instr_CALL_nnn(uint16_t opcode, struct emulator *eml
 }
 
 /* 3xkk - SE Vx, byte: Skip next instruction if Vx = kk. */
-static inline enum eml_stat instr_SE_Vx_kk(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_SE_Vx_kk(uint16_t opcode, struct emulator *eml) {
     if (eml->cpu.V[op_x(opcode)] == op_kk(opcode)) {
         eml->cpu.PC += 2;
     }
@@ -82,7 +82,7 @@ static inline enum eml_stat instr_SE_Vx_kk(uint16_t opcode, struct emulator *eml
 }
 
 /* 4xkk - SNE Vx, byte: Skip next instruction if Vx != kk. */
-static inline enum eml_stat instr_SNE_Vx_kk(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_SNE_Vx_kk(uint16_t opcode, struct emulator *eml) {
     if (eml->cpu.V[op_x(opcode)] != op_kk(opcode)) {
         eml->cpu.PC += 2;
     }
@@ -90,7 +90,7 @@ static inline enum eml_stat instr_SNE_Vx_kk(uint16_t opcode, struct emulator *em
 }
 
 /* 5xy0 - SE Vx, Vy: Skip next instruction if Vx = Vy. */
-static inline enum eml_stat instr_SE_Vx_Vy(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_SE_Vx_Vy(uint16_t opcode, struct emulator *eml) {
     if (eml->cpu.V[op_x(opcode)] == eml->cpu.V[op_y(opcode)]) {
         eml->cpu.PC += 2;
     }
@@ -98,43 +98,43 @@ static inline enum eml_stat instr_SE_Vx_Vy(uint16_t opcode, struct emulator *eml
 }
 
 /* 6xkk - LD Vx, byte: Set Vx = kk. */
-static inline enum eml_stat instr_LD_Vx_kk(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_LD_Vx_kk(uint16_t opcode, struct emulator *eml) {
     eml->cpu.V[op_x(opcode)] = op_kk(opcode);
     return EML_OK;
 }
 
 /* 7xkk - ADD Vx, byte: Set Vx = Vx + kk. */
-static inline enum eml_stat instr_ADD_Vx_kk(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_ADD_Vx_kk(uint16_t opcode, struct emulator *eml) {
     eml->cpu.V[op_x(opcode)] += op_kk(opcode);
     return EML_OK;
 }
 
 /* 8xy0 - LD Vx, Vy: Set Vx = Vy. */
-static inline enum eml_stat instr_LD_Vx_Vy(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_LD_Vx_Vy(uint16_t opcode, struct emulator *eml) {
     eml->cpu.V[op_x(opcode)] = eml->cpu.V[op_y(opcode)];
     return EML_OK;
 }
 
 /* 8xy1 - OR Vx, Vy: Set Vx = Vx OR Vy. */
-static inline enum eml_stat instr_OR_Vx_Vy(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_OR_Vx_Vy(uint16_t opcode, struct emulator *eml) {
     eml->cpu.V[op_x(opcode)] |= eml->cpu.V[op_y(opcode)];
     return EML_OK;
 }
 
 /* 8xy2 - AND Vx, Vy: Set Vx = Vx AND Vy. */
-static inline enum eml_stat instr_AND_Vx_Vy(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_AND_Vx_Vy(uint16_t opcode, struct emulator *eml) {
     eml->cpu.V[op_x(opcode)] &= eml->cpu.V[op_y(opcode)];
     return EML_OK;
 }
 
 /* 8xy3 - XOR Vx, Vy: Set Vx = Vx XOR Vy. */
-static inline enum eml_stat instr_XOR_Vx_Vy(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_XOR_Vx_Vy(uint16_t opcode, struct emulator *eml) {
     eml->cpu.V[op_x(opcode)] ^= eml->cpu.V[op_y(opcode)];
     return EML_OK;
 }
 
 /* 8xy4 - ADD Vx, Vy: Set Vx = Vx + Vy, set eml->cpu.V[0xF] = carry. */
-static inline enum eml_stat instr_ADD_Vx_Vy(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_ADD_Vx_Vy(uint16_t opcode, struct emulator *eml) {
     uint16_t s = (uint16_t) eml->cpu.V[op_x(opcode)] + (uint16_t) eml->cpu.V[op_y(opcode)];
     eml->cpu.V[0xF] = (s > 0xFF) ? 1 : 0;
     eml->cpu.V[op_x(opcode)] = s & 0xFF;
@@ -142,35 +142,35 @@ static inline enum eml_stat instr_ADD_Vx_Vy(uint16_t opcode, struct emulator *em
 }
 
 /* 8xy5 - SUB Vx, Vy: Set Vx = Vx - Vy, set eml->cpu.V[0xF] = NOT borrow. */
-static inline enum eml_stat instr_SUB_Vx_Vy(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_SUB_Vx_Vy(uint16_t opcode, struct emulator *eml) {
     eml->cpu.V[0xF] = (eml->cpu.V[op_x(opcode)] > eml->cpu.V[op_y(opcode)]) ? 1 : 0;
     eml->cpu.V[op_x(opcode)] -= eml->cpu.V[op_y(opcode)];
     return EML_OK;
 }
 
 /* 8xy6 - SHR Vx {, Vy}: Set Vx = Vx SHR 1. */
-static inline enum eml_stat instr_SHR_Vx_Vy(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_SHR_Vx_Vy(uint16_t opcode, struct emulator *eml) {
     eml->cpu.V[0xF] = eml->cpu.V[op_x(opcode)] & 0x01;
     eml->cpu.V[op_x(opcode)] = eml->cpu.V[op_x(opcode)] >> 1;
     return EML_OK;
 }
 
 /* 8xy7 - SUBN Vx, Vy: Set Vx = Vy - Vx, set eml->cpu.V[0xF] = NOT borrow. */
-static inline enum eml_stat instr_SUBN_Vx_Vy(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_SUBN_Vx_Vy(uint16_t opcode, struct emulator *eml) {
     eml->cpu.V[0xF] = (eml->cpu.V[op_x(opcode)] < eml->cpu.V[op_y(opcode)]) ? 1 : 0;
     eml->cpu.V[op_x(opcode)] = eml->cpu.V[op_y(opcode)] - eml->cpu.V[op_x(opcode)];
     return EML_OK;
 }
 
 /* 8xyE - SHL Vx {, Vy}: Set Vx = Vx SHL 1. */
-static inline enum eml_stat instr_SHL_Vx_Vy(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_SHL_Vx_Vy(uint16_t opcode, struct emulator *eml) {
     eml->cpu.V[0xF] = (eml->cpu.V[op_x(opcode)] & 0x80) >> 7;
     eml->cpu.V[op_x(opcode)] = eml->cpu.V[op_x(opcode)] << 1;
     return EML_OK;
 }
 
 /* 9xy0 - SNE Vx, Vy: Skip next instruction if Vx != Vy. */
-static inline enum eml_stat instr_SNE_Vx_Vy(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_SNE_Vx_Vy(uint16_t opcode, struct emulator *eml) {
     if (eml->cpu.V[op_x(opcode)] != eml->cpu.V[op_y(opcode)]) {
         eml->cpu.PC += 2;
     }
@@ -178,19 +178,19 @@ static inline enum eml_stat instr_SNE_Vx_Vy(uint16_t opcode, struct emulator *em
 }
 
 /* Annn - LD I, addr: Set I = nnn. */
-static inline enum eml_stat instr_LD_I_nnn(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_LD_I_nnn(uint16_t opcode, struct emulator *eml) {
     eml->cpu.I = op_nnn(opcode);
     return EML_OK;
 }
 
 /* Bnnn - JP V0, addr: Jump to location nnn + V0. */
-static inline enum eml_stat instr_JP_V0_nnn(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_JP_V0_nnn(uint16_t opcode, struct emulator *eml) {
     eml->cpu.PC = op_nnn(opcode) + eml->cpu.V[0];
     return EML_OK;
 }
 
 /* Cxkk - RND Vx, byte: Set Vx = random byte AND kk. */
-static inline enum eml_stat instr_RND_Vx_kk(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_RND_Vx_kk(uint16_t opcode, struct emulator *eml) {
     eml->cpu.V[op_x(opcode)] = rand() & op_kk(opcode);
     return EML_OK;
 }
@@ -200,7 +200,7 @@ static inline enum eml_stat instr_RND_Vx_kk(uint16_t opcode, struct emulator *em
  * Display n-byte sprite starting at memory location I at (Vx, Vy),
  * set eml->cpu.V[0xF] = collision.
  */
-static inline enum eml_stat instr_DRW_Vx_Vy_n(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_DRW_Vx_Vy_n(uint16_t opcode, struct emulator *eml) {
     uint8_t n = opcode & 0xF;
     uint8_t x = eml->cpu.V[op_x(opcode)];
     uint8_t y = eml->cpu.V[op_y(opcode)];
@@ -225,7 +225,7 @@ static inline enum eml_stat instr_DRW_Vx_Vy_n(uint16_t opcode, struct emulator *
  * Ex9E - SKP Vx:
  * Skip next instruction if key with the value of Vx is pressed.
  */
-static inline enum eml_stat instr_SKP_Vx(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_SKP_Vx(uint16_t opcode, struct emulator *eml) {
     if (keypad_is_pressed(eml, eml->cpu.V[op_x(opcode)])) {
         eml->cpu.PC += 2;
     }
@@ -236,7 +236,7 @@ static inline enum eml_stat instr_SKP_Vx(uint16_t opcode, struct emulator *eml) 
  * ExA1 - SKNP Vx:
  * Skip next instruction if key with the value of Vx is not pressed.
  */
-static inline enum eml_stat instr_SKNP_Vx(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_SKNP_Vx(uint16_t opcode, struct emulator *eml) {
     if (!keypad_is_pressed(eml, eml->cpu.V[op_x(opcode)])) {
         eml->cpu.PC += 2;
     }
@@ -244,13 +244,13 @@ static inline enum eml_stat instr_SKNP_Vx(uint16_t opcode, struct emulator *eml)
 }
 
 /* Fx07 - LD Vx, DT: Set Vx = delay timer value. */
-static inline enum eml_stat instr_LD_Vx_DT(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_LD_Vx_DT(uint16_t opcode, struct emulator *eml) {
     eml->cpu.V[op_x(opcode)] = eml->cpu.DT;
     return EML_OK;
 }
 
 /* Fx0A - LD Vx, K: Wait for a key press, store the value of the key in Vx. */
-static inline enum eml_stat instr_LD_Vx_K(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_LD_Vx_K(uint16_t opcode, struct emulator *eml) {
     if (eml->last_key == C8K_NONE) { /* start waiting-for-key process */
         eml->key_waiting = true;
         return EML_OK;
@@ -262,26 +262,26 @@ static inline enum eml_stat instr_LD_Vx_K(uint16_t opcode, struct emulator *eml)
 }
 
 /* Fx15 - LD DT, Vx: Set delay timer = Vx. */
-static inline enum eml_stat instr_LD_DT_Vx(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_LD_DT_Vx(uint16_t opcode, struct emulator *eml) {
     eml->cpu.DT = eml->cpu.V[op_x(opcode)];
     return EML_OK;
 }
 
 /* Fx18 - LD ST, Vx: Set sound timer = Vx. */
-static inline enum eml_stat instr_LD_ST_Vx(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_LD_ST_Vx(uint16_t opcode, struct emulator *eml) {
     eml->cpu.ST = eml->cpu.V[op_x(opcode)];
     return EML_OK;
 }
 
 /* Fx1E - ADD I, Vx: Set I = I + Vx. */
-static inline enum eml_stat instr_ADD_I_Vx(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_ADD_I_Vx(uint16_t opcode, struct emulator *eml) {
     eml->cpu.I += eml->cpu.V[op_x(opcode)];
     eml->cpu.V[0xF] = (eml->cpu.I > 0xFFF) ? 1 : 0; /* undocumented feature */
     return EML_OK;
 }
 
 /* Fx29 - LD F, Vx: Set I = location of sprite for digit Vx. */
-static inline enum eml_stat instr_LD_F_Vx(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_LD_F_Vx(uint16_t opcode, struct emulator *eml) {
     eml->cpu.I = eml->cpu.V[op_x(opcode)] * 5;
     return EML_OK;
 }
@@ -290,7 +290,7 @@ static inline enum eml_stat instr_LD_F_Vx(uint16_t opcode, struct emulator *eml)
  * Fx33 - LD B, Vx:
  * Store BCD representation of Vx in memory locations I, I+1, and I+2.
  */
-static inline enum eml_stat instr_LD_B_Vx(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_LD_B_Vx(uint16_t opcode, struct emulator *eml) {
     uint8_t vx = eml->cpu.V[op_x(opcode)];
     eml->cpu.memory[eml->cpu.I] = vx / 100;
     eml->cpu.memory[eml->cpu.I+1] = (vx / 10) % 10;
@@ -302,7 +302,7 @@ static inline enum eml_stat instr_LD_B_Vx(uint16_t opcode, struct emulator *eml)
  * Fx55 - LD [I], Vx:
  * Store registers V0 through Vx in memory starting at location I.
  */
-static inline enum eml_stat instr_LD_I_Vx_multi(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_LD_I_Vx_multi(uint16_t opcode, struct emulator *eml) {
     for (int i = 0; i <= op_x(opcode); i++) {
         eml->cpu.memory[eml->cpu.I+i] = eml->cpu.V[i];
     }
@@ -313,7 +313,7 @@ static inline enum eml_stat instr_LD_I_Vx_multi(uint16_t opcode, struct emulator
  * Fx65 - LD Vx, [I]:
  * Read registers V0 through Vx from memory starting at location I.
  */
-static inline enum eml_stat instr_LD_Vx_I_multi(uint16_t opcode, struct emulator *eml) {
+static enum eml_stat instr_LD_Vx_I_multi(uint16_t opcode, struct emulator *eml) {
     for (int i = 0; i <= op_x(opcode); i++) {
         eml->cpu.V[i] = eml->cpu.memory[eml->cpu.I+i];
     }
