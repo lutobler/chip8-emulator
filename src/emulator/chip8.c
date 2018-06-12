@@ -364,6 +364,7 @@ enum eml_stat emulator_cycle(struct emulator *eml) {
         case 0xE0: status = instr_CLS(eml->opcode, eml); goto endcase;
         case 0xEE: status = instr_RET(eml->opcode, eml); goto endcase;
         }
+        break;
     case 0x1: status = instr_JP_nnn(eml->opcode, eml); goto endcase;
     case 0x2: status = instr_CALL_nnn(eml->opcode, eml); goto endcase;
     case 0x3: status = instr_SE_Vx_kk(eml->opcode, eml); goto endcase;
@@ -383,6 +384,7 @@ enum eml_stat emulator_cycle(struct emulator *eml) {
         case 0x7: status = instr_SUBN_Vx_Vy(eml->opcode, eml); goto endcase;
         case 0xE: status = instr_SHL_Vx_Vy(eml->opcode, eml); goto endcase;
         }
+        break;
     case 0x9: status = instr_SNE_Vx_Vy(eml->opcode, eml); goto endcase;
     case 0xA: status = instr_LD_I_nnn(eml->opcode, eml); goto endcase;
     case 0xB: status = instr_JP_V0_nnn(eml->opcode, eml); goto endcase;
@@ -393,6 +395,7 @@ enum eml_stat emulator_cycle(struct emulator *eml) {
         case 0x9E: status = instr_SKP_Vx(eml->opcode, eml); goto endcase;
         case 0xA1: status = instr_SKNP_Vx(eml->opcode, eml); goto endcase;
         }
+        break;
     case 0xF:
         switch (eml->opcode & 0xFF) {
         case 0x07: status = instr_LD_Vx_DT(eml->opcode, eml); goto endcase;
@@ -405,6 +408,7 @@ enum eml_stat emulator_cycle(struct emulator *eml) {
         case 0x55: status = instr_LD_I_Vx_multi(eml->opcode, eml); goto endcase;
         case 0x65: status = instr_LD_Vx_I_multi(eml->opcode, eml); goto endcase;
         }
+        break;
     }
 endcase:
 
