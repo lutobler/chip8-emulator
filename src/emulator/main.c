@@ -185,16 +185,6 @@ static bool event_handler(SDL_Event *event) {
             case SDLK_a: case SDLK_s: case SDLK_d: case SDLK_f:
             case SDLK_y: case SDLK_x: case SDLK_c: case SDLK_v:
                 keypad_pressed(&eml, event->key.keysym.sym);
-            break;
-        }
-        break;
-    case SDL_KEYUP:
-        switch (event->key.keysym.sym) {
-            case SDLK_1: case SDLK_2: case SDLK_3: case SDLK_4:
-            case SDLK_q: case SDLK_w: case SDLK_e: case SDLK_r:
-            case SDLK_a: case SDLK_s: case SDLK_d: case SDLK_f:
-            case SDLK_y: case SDLK_x: case SDLK_c: case SDLK_v:
-                keypad_released(&eml, event->key.keysym.sym);
                 break;
             case SDLK_i:
                 eml.clock_speed += 60;
@@ -221,6 +211,16 @@ static bool event_handler(SDL_Event *event) {
                 }
                 update_overlay();
                 display_redraw();
+                break;
+        }
+        break;
+    case SDL_KEYUP:
+        switch (event->key.keysym.sym) {
+            case SDLK_1: case SDLK_2: case SDLK_3: case SDLK_4:
+            case SDLK_q: case SDLK_w: case SDLK_e: case SDLK_r:
+            case SDLK_a: case SDLK_s: case SDLK_d: case SDLK_f:
+            case SDLK_y: case SDLK_x: case SDLK_c: case SDLK_v:
+                keypad_released(&eml, event->key.keysym.sym);
                 break;
         }
         break;
@@ -341,11 +341,11 @@ int main(int argc, char **argv) {
     }
 
     /*
-     * The main loop is run at 60 Hz, but the emulator run much faster.
+     * The main loop is run at 60 Hz, but the emulator runs much faster.
      * Every iteration, a number of cycles are run such that the desired
      * clock speed is reached *on average*.
      *
-     * The counters are decreased at a defined rate of 60 Hz.
+     * The counters are decreased at the defined rate of 60 Hz.
      */
     SDL_Event event;
     struct timespec t_start = {0, 0};
@@ -355,7 +355,9 @@ int main(int argc, char **argv) {
     while (!terminate) {
         clock_gettime(CLOCK_MONOTONIC_RAW, &t_start);
 
-        int cycle_n = eml.clock_speed / 60; /* num of cycles per main loop iteration */
+        /* num of cycles per main loop iteration */
+        int cycle_n = eml.clock_speed / 60;
+
         bool redraw = false;
         bool fault = false;
         for (int i = 0; i < cycle_n && !fault; i++) {
